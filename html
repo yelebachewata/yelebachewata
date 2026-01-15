@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="am">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>የሌባ ጨዋታ - PRO Edition</title>
+  <style>
+    :root {
+      --primary: #84994F;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #facc15;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .app-bar {
+      padding: 15px;
+      background: var(--card-bg);
+      text-align: center;
+      font-weight: 900;
+      font-size: 22px;
+      border-bottom: 3px solid var(--primary);
+      color: var(--accent);
+    }
+
+    .screen {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 12px;
+      border: 2px solid #334155;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .mode-active {
+      border-color: var(--accent);
+      background: rgba(250, 204, 21, 0.1);
+      color: var(--accent);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 14px;
+      border: 2px solid #334155;
+      background: #0f172a;
+      color: white;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 18px;
+      margin: 8px 0;
+      border-radius: 16px;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #334155;
+      color: white;
+    }
+
+    .player-chip {
+      background: #334155;
+      padding: 8px 14px;
+      border-radius: 50px;
+      margin: 4px;
+      display: inline-block;
+      font-size: 13px;
+      border: 1px solid var(--primary);
+    }
+
+    #secret-box {
+      font-size: 28px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 4px dashed var(--accent);
+      margin: 20px 0;
+      border-radius: 24px;
+      background: rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .category-hint {
+      color: var(--accent);
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #timer-display {
+      font-size: 64px;
+      font-weight: 800;
+      color: var(--accent);
+      margin: 20px 0;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .thinking {
+      animation: pulse 1.5s infinite;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-bar">የሌባ ጨዋታ (Imposter)</div>
+
+  <div id="setup-screen" class="screen">
+    <div class="card">
+      <div class="mode-selector">
+        <button id="mode-normal" class="mode-btn mode-active" onclick="setGameMode('normal')">Normal</button>
+        <button id="mode-category" class="mode-btn" onclick="setGameMode('category')">Category</button>
+        <button id="mode-custom" class="mode-btn" onclick="setGameMode('custom')">Custom ✍️</button>
+      </div>
+
+      <div id="custom-input-area" class="hidden">
+        <textarea id="custom-words" placeholder="ቃላቶችን እዚህ ያስገቡ (በኮማ ይለዩ)... 
+ምሳሌ፡ ቡና, ሻይ, ቆሎ"></textarea>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="player-name" placeholder="የተጫዋች ስም..." style="margin:0">
+        <button onclick="addPlayer()" class="btn-primary" style="width:60px; margin:0">➕</button>
+      </div>
+      <div id="list" style="margin: 15px 0; min-height: 20px;"></div>
+
+      <select id="imp-count">
+        <option value="1">1 ሌባ (Imposter)</option>
+        <option value="2">2 ሌባ (Imposters)</option>
+        <option value="3">3 ሌባ (Imposters)</option>
+      </select>
+
+      <button onclick="startGame()" class="btn-success">ጨዋታውን ጀምር (START)</button>
+    </div>
+  </div>
+
+  <div id="reveal-screen" class="screen hidden">
+    <div class="card">
+      <h2 id="current-player-name" style="text-align:center; margin:0">---</h2>
+      <p class="thinking" style="text-align:center;">Hand the phone to this player</p>
+      <div id="secret-box" onclick="toggleRole()">TAP TO REVEAL<br><small>ንካው</small></div>
+      <button id="next-btn" class="hidden btn-primary" onclick="nextReveal()">ቀጣይ (NEXT)</button>
+    </div>
+  </div>
+
+  <div id="discuss-screen" class="screen hidden">
+    <div id="cat-display" class="category-hint"></div>
+    <div id="timer-display">05:00</div>
+    <button class="btn-primary" style="background:var(--danger); width:160px; height:160px; border-radius:50%; border:8px solid #991b1b;" onclick="triggerEmergency()">🚨<br>VOTE</button>
+  </div>
+
+  <div id="vote-screen" class="screen hidden">
+    <div class="card">
+      <h2 id="voter-name" style="text-align:center;">---</h2>
+      <div id="vote-options"></div>
+    </div>
+  </div>
+
+  <div id="result-screen" class="screen hidden">
+    <div class="card" style="text-align:center;">
+      <h1 id="res-name" style="color:var(--accent)"></h1>
+      <p id="res-status"></p>
+      <h3 id="res-word" style="color:var(--success)"></h3>
+      <button id="cont-btn" onclick="resumeGame()" class="btn-primary">ቀጥል (CONTINUE)</button>
+      <button onclick="location.reload()" class="btn-outline">አዲስ ጨዋታ (NEW)</button>
+    </div>
+  </div>
+
+  <script>
+    let players = [],
+      imposters = [],
+      ejected = [],
+      votes = {},
+      wordObj = {},
+      gameMode = 'normal';
+    let currentIndex = 0,
+      timer, timeLeft = 300;
+    const wordLibrary = {
+      "መጓጓዣ (Transport)": [{
+        am: "አውሮፕላን",
+        en: "Airplane"
+      }, {
+        am: "ባቡር",
+        en: "Train"
+      }, {
+        am: "መርከብ",
+        en: "Ship"
+      }, {
+        am: "ታክሲ",
+        en: "Taxi"
+      }],
+      "እንስሳት (Animals)": [{
+        am: "አንበሳ",
+        en: "Lion"
+      }, {
+        am: "ዝሆን",
+        en: "Elephant"
+      }, {
+        am: "ነብር",
+        en: "Tiger"
+      }, {
+        am: "ቀጭኔ",
+        en: "Giraffe"
+      }],
+      "ምግብ (Food)": [{
+        am: "ፒዛ",
+        en: "Pizza"
+      }, {
+        am: "እንጀራ",
+        en: "Injera"
+      }, {
+        am: "ዳቦ",
+        en: "Bread"
+      }, {
+        am: "ፓስታ",
+        en: "Pasta"
+      }],
+      "ቦታዎች (Places)": [{
+        am: "ሆስፒታል",
+        en: "Hospital"
+      }, {
+        am: "ባንክ",
+        en: "Bank"
+      }, {
+        am: "ትምህርት ቤት",
+        en: "School"
+      }, {
+        am: "ሲኒማ",
+        en: "Cinema"
+      }]
+    };
+
+    function setGameMode(mode) {
+      gameMode = mode;
+      document.getElementById('mode-normal').classList.toggle('mode-active', mode === 'normal');
+      document.getElementById('mode-category').classList.toggle('mode-active', mode === 'category');
+      document.getElementById('mode-custom').classList.toggle('mode-active', mode === 'custom');
+      document.getElementById('custom-input-area').classList.toggle('hidden', mode !== 'custom');
+    }
+
+    function addPlayer() {
+      const name = document.getElementById('player-name').value.trim();
+      if (name) {
+        players.push(name);
+        document.getElementById('list').innerHTML = players.map(p => `<span class="player-chip">${p}</span>`).join('');
+        document.getElementById('player-name').value = "";
+      }
+    }
+
+    function startGame() {
+      if (players.length < 3) return alert("ቢያንስ 3 ተጫዋች ያስፈልጋል!");
+      if (gameMode === 'custom') {
+        const customInput = document.getElementById('custom-words').value;
+        const customList = customInput.split(',').map(w => w.trim()).filter(w => w.length > 0);
+        if (customList.length === 0) return alert("እባክዎ ቢያንስ አንድ ቃል ያስገቡ!");
+        const pick = customList[Math.floor(Math.random() * customList.length)];
+        wordObj = {
+          am: pick,
+          en: "Custom Word",
+          category: "Custom"
+        };
+      } else {
+        const categories = Object.keys(wordLibrary);
+        const randomCat = categories[Math.floor(Math.random() * categories.length)];
+        const randomWord = wordLibrary[randomCat][Math.floor(Math.random() * wordLibrary[randomCat].length)];
+        wordObj = {
+          ...randomWord,
+          category: randomCat
+        };
+      }
+      imposters = [];
+      let count = parseInt(document.getElementById('imp-count').value);
+      while (imposters.length < count) {
+        let r = Math.floor(Math.random() * players.length);
+        if (!imposters.includes(r)) imposters.push(r);
+      }
+      currentIndex = 0;
+      show('reveal-screen');
+      updateReveal();
+    }
+
+    function updateReveal() {
+      document.getElementById('current-player-name').innerText = players[currentIndex];
+      document.getElementById('secret-box').innerHTML = "TAP TO REVEAL<br><small>ንካው</small>";
+      document.getElementById('next-btn').classList.add('hidden');
+    }
+
+    function toggleRole() {
+      const box = document.getElementById('secret-box');
+      const isImp = imposters.includes(currentIndex);
+      let catHtml = (gameMode === 'category' || gameMode === 'custom') ? `<div class="category-hint">ምድብ: ${wordObj.category}</div>` : "";
+      if (isImp) {
+        let partners = imposters.filter(i => i !== currentIndex).map(i => players[i]).join(", ");
+        box.innerHTML = `${catHtml}<span style="color:var(--danger)">🚩 ሌባ ነህ!</span><br><small>Imposter</small>` +
+          (partners ? `<div style="font-size:14px; margin-top:10px;">ጓደኞችህ: ${partners}</div>` : "");
+      } else {
+        box.innerHTML = `${catHtml}ቃሉ:<br><span style="color:var(--success)">${wordObj.am}</span>` +
+          (wordObj.en !== "Custom Word" ? `<br><small>${wordObj.en}</small>` : "");
+      }
+      document.getElementById('next-btn').classList.remove('hidden');
+    }
+
+    function nextReveal() {
+      currentIndex++;
+      if (currentIndex < players.length) updateReveal();
+      else startDiscussion();
+    }
+
+    function startDiscussion() {
+      show('discuss-screen');
+      document.getElementById('cat-display').innerText = (gameMode === 'category' || gameMode === 'custom') ? `ምድብ (Category): ${wordObj.category}` : "Mode: Normal";
+      timeLeft = 300;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        let m = Math.floor(timeLeft / 60),
+          s = timeLeft % 60;
+        document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+        if (timeLeft-- <= 0) triggerEmergency();
+      }, 1000);
+    }
+
+    function triggerEmergency() {
+      clearInterval(timer);
+      currentIndex = 0;
+      votes = {};
+      showVote();
+    }
+
+    function showVote() {
+      while (currentIndex < players.length && ejected.includes(currentIndex)) currentIndex++;
+      if (currentIndex >= players.length) return tally();
+      show('vote-screen');
+      document.getElementById('voter-name').innerText = players[currentIndex] + " Vote!";
+      let html = "";
+      players.forEach((p, i) => {
+        if (!ejected.includes(i) && i !== currentIndex)
+          html += `<button class="btn-outline" onclick="cast(${i})">${p}</button>`;
+      });
+      document.getElementById('vote-options').innerHTML = html + `<button class="btn-outline" style="opacity:0.5" onclick="cast(-1)">SKIP</button>`;
+    }
+
+    function cast(t) {
+      if (t !== -1) votes[t] = (votes[t] || 0) + 1;
+      currentIndex++;
+      showVote();
+    }
+
+    function tally() {
+      show('result-screen');
+      let winner = Object.keys(votes).reduce((a, b) => votes[a] > votes[b] ? a : b, -1);
+      const resName = document.getElementById('res-name');
+      const resStatus = document.getElementById('res-status');
+      if (winner === -1) {
+        resName.innerText = "እኩል!";
+        resStatus.innerText = "No one ejected.";
+      } else {
+        let idx = parseInt(winner);
+        ejected.push(idx);
+        resName.innerText = players[idx];
+        resStatus.innerText = imposters.includes(idx) ? "✅ ሌባ ነበረ!" : "❌ ሌባ አልነበረም!";
+      }
+      document.getElementById('res-word').innerText = `ቃሉ: ${wordObj.am}`;
+      let aliveImps = imposters.filter(i => !ejected.includes(i)).length;
+      if (aliveImps === 0) {
+        resStatus.innerHTML += "<br>🎉 Citizens Win!";
+        document.getElementById('cont-btn').classList.add('hidden');
+      } else {
+        document.getElementById('cont-btn').classList.remove('hidden');
+      }
+    }
+
+    function resumeGame() {
+      show('discuss-screen');
+      startDiscussion();
+    }
+
+    function show(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
+  </script>
+</body>
+
+</html>
